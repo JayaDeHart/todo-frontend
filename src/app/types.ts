@@ -1,7 +1,7 @@
 export enum Priority {
-  LOW,
-  MEDIUM,
-  HIGH,
+  LOW = "LOW",
+  MEDIUM = "MEDIUM",
+  HIGH = "HIGH",
 }
 
 export enum Color {
@@ -25,4 +25,14 @@ export type TaskType = {
   createdAt: Date;
   updatedAt: Date;
   completedAt?: Date;
+};
+
+export type SubmitValues = {
+  title: String;
+  color: String;
+  priority: String;
+};
+
+export const toSentenceCase = (str: string) => {
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 };
