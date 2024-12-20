@@ -8,7 +8,6 @@ import { Color, Priority, TaskType } from "./types";
 
 export default async function Home() {
   const url = process.env.API_BASE_URL || "http://localhost:8000";
-  console.log(url + "/api/tasks");
 
   const tasks = await fetch(url + "/api/tasks");
   const tasksData = await tasks.json();

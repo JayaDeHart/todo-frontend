@@ -1,3 +1,5 @@
+"use client";
+
 import { type TaskType } from "../types";
 import checked from "../../../public/checked.svg";
 import unchecked from "../../../public/unchecked.svg";
@@ -10,6 +12,37 @@ type TaskProps = {
 
 const Task = (props: TaskProps) => {
   const { task } = props;
+  const url = process.env.API_BASE_URL || "http://localhost:8000";
+
+  const setCompleted = async () => {
+    const completedTask = {
+      ...task,
+      completed: !task.completed,
+    };
+
+    const response = await fetch(`${url}/api/tasks/${task.id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(completedTask),
+    });
+
+    const res = await response.json();
+    console.log(res);
+  };
+
+  const deleteTask = async () => {
+    const response = await fetch(`${url}/api/tasks/${task.id}`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    const res = await response.json();
+    console.log(res);
+  };
   return (
     <div
       className={`flex bg-input w-full p-6 rounded-md border border-lightGray text-sm text-offWhite font-normal gap-4 items-top ${
@@ -22,6 +55,7 @@ const Task = (props: TaskProps) => {
         width={30}
         height={30}
         className="flex-shrink-0 hover:cursor-pointer"
+        onClick={setCompleted}
       />
       {task.title}
       <Image
@@ -30,6 +64,7 @@ const Task = (props: TaskProps) => {
         width={30}
         height={30}
         className="flex-shrink-0 ml-auto hover:cursor-pointer"
+        onClick={deleteTask}
       />
     </div>
   );
