@@ -140,19 +140,21 @@ const Tasks = () => {
           </span>
         </div>
 
-        <div className="mt-4 mb-10 flex justify-center gap-4">
-          <p className="text-purple text-center font-semibold">Filter</p>
-          {Array.from(colors, ([key, value]) => (
-            <div
-              key={key}
-              className={`p-3 rounded-full hover:cursor-pointer ${
-                color === key ? "ring-2 ring-offWhite" : ""
-              }`}
-              style={{ backgroundColor: value }}
-              onClick={() => handleColorSelect(key)}
-            ></div>
-          ))}
-        </div>
+        {tasks.length ? (
+          <div className="mt-4 mb-10 flex justify-center gap-4">
+            <p className="text-purple text-center font-semibold">Filter</p>
+            {Array.from(colors, ([key, value]) => (
+              <div
+                key={key}
+                className={`p-3 rounded-full hover:cursor-pointer ${
+                  color === key ? "ring-2 ring-offWhite" : ""
+                }`}
+                style={{ backgroundColor: value }}
+                onClick={() => handleColorSelect(key)}
+              ></div>
+            ))}
+          </div>
+        ) : null}
 
         {tasks.length === 0 && (
           <>
