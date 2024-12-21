@@ -8,6 +8,7 @@ import Image from "next/image";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { deleteTask, updateTask } from "../_api/tasks";
 import { colors } from "../create/page";
+import { DragOverlay, useDraggable } from "@dnd-kit/core";
 
 type TaskProps = {
   task: TaskType;
@@ -16,7 +17,6 @@ type TaskProps = {
 const Task = (props: TaskProps) => {
   const { task } = props;
   const color = colors.get(toSentenceCase(task.color.toString()));
-  console.log(color);
   const queryClient = useQueryClient();
 
   const updateTaskMutation = useMutation({
@@ -43,14 +43,30 @@ const Task = (props: TaskProps) => {
     },
   });
 
+  const { attributes, listeners, setNodeRef, transform } = useDraggable({
+    id: task.id.toString(),
+  });
+  const style = transform
+    ? {
+        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+      }
+    : undefined;
+
   return (
-    <div className="rounded-md" style={{ borderTop: `1px solid ${color}` }}>
+    <div
+      ref={setNodeRef}
+      className="rounded-md"
+      style={{ borderTop: `1px solid ${color}`, ...style }}
+      {...listeners}
+      {...attributes}
+    >
       <div
         className={`flex bg-input w-full p-6 rounded-md border border-lightGray text-sm text-offWhite font-normal gap-4 items-top ${
           task.completed && "line-through !text-graytext"
         }`}
       >
         <Image
+          data-no-dnd="true"
           src={task.completed ? checked : unchecked}
           alt="Checkbox"
           width={30}
@@ -74,6 +90,7 @@ const Task = (props: TaskProps) => {
           height={30}
           className="flex-shrink-0 ml-auto hover:cursor-pointer"
           onClick={() => deleteTaskMutation.mutate(task.id)}
+          data-no-dnd="true"
         />
       </div>
     </div>
