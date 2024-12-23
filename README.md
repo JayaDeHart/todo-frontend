@@ -1,3 +1,6 @@
+## About
+A simple todo frontend. Built in Next.js. Uses React Query to handle data fetching and state management. Uses dnd-kit for draggable features.
+
 ## Getting Started
 
 1. Clone the repository to your machine
