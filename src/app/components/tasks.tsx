@@ -185,95 +185,96 @@ const Tasks = () => {
   const sensors = useSensors(mouseSensor);
 
   return (
-    <DndContext
-      onDragEnd={handleDragEnd}
-      sensors={sensors}
-      onDragStart={handleDragStart}
-      onDragOver={handleDragOver}
-    >
-      <div className="w-full">
-        <div className="w-full flex justify-between font-semibold mt-10 mb-10">
-          <span className="text-lightBlue">
-            Tasks{" "}
-            <span className="text-gray bg-lightGray p-1 px-3 rounded-xl">
-              {filteredTasks.length}
-            </span>
+    <div className="w-full">
+      <div className="w-full flex justify-between font-semibold mt-10 mb-10">
+        <span className="text-lightBlue">
+          Tasks{" "}
+          <span className="text-gray bg-lightGray p-1 px-3 rounded-xl">
+            {filteredTasks.length}
           </span>
+        </span>
 
-          <span className="text-purple">
-            Completed{" "}
-            <span className="text-gray bg-lightGray p-1 px-3 rounded-xl">
-              {completedTasks.length} of {filteredTasks.length}
-            </span>
+        <span className="text-purple">
+          Completed{" "}
+          <span className="text-gray bg-lightGray p-1 px-3 rounded-xl">
+            {completedTasks.length} of {filteredTasks.length}
           </span>
-        </div>
-
-        {tasks.length ? (
-          <div className="mt-4 mb-10 flex justify-center gap-4">
-            <p className="text-purple text-center font-semibold">Filter</p>
-            {Array.from(colors, ([key, value]) => (
-              <div
-                key={key}
-                className={`p-3 rounded-full hover:cursor-pointer ${
-                  color === key ? "ring-2 ring-offWhite" : ""
-                }`}
-                style={{ backgroundColor: value }}
-                onClick={() => handleColorSelect(key)}
-              ></div>
-            ))}
-          </div>
-        ) : null}
-
-        {tasks.length === 0 && (
-          <>
-            <div
-              className="w-full border-t border-l border-r h-1 border-lightGray"
-              style={{
-                borderRadius: "20px 20px 0px 0px",
-              }}
-            ></div>
-            <div className="flex flex-col w-full items-center my-10 text-graytext gap-6">
-              <Image
-                src={clipboard}
-                alt="Clipboard Icon"
-                width={60}
-                height={60}
-              />
-              <p className="font-bold">
-                You don't have any tasks registered yet.
-              </p>
-              <p>Create tasks and organize your to-do items.</p>
-            </div>
-          </>
-        )}
-
-        <TaskSection id={Priority.HIGH}>
-          {filteredTasks
-            .filter((task) => task.priority === "HIGH")
-            .map((task) => (
-              <Task task={task} key={task.id} />
-            ))}
-        </TaskSection>
-        <TaskSection id={Priority.MEDIUM}>
-          {filteredTasks
-            .filter((task) => task.priority === "MEDIUM")
-            .map((task) => (
-              <Task task={task} key={task.id} />
-            ))}
-        </TaskSection>
-        <TaskSection id={Priority.LOW}>
-          {filteredTasks
-            .filter((task) => task.priority === "LOW")
-            .map((task) => (
-              <Task task={task} key={task.id} />
-            ))}
-        </TaskSection>
-        {/* it was very difficult to get the drop animation working with how react query handles state. It is one thing I would love to go back and figure out given more time */}
-        <DragOverlay>
-          {activeTask ? <Task task={activeTask} /> : null}
-        </DragOverlay>
+        </span>
       </div>
-    </DndContext>
+
+      {tasks.length ? (
+        <div className="mt-4 mb-10 flex justify-center gap-4">
+          <p className="text-purple text-center font-semibold">Filter</p>
+          {Array.from(colors, ([key, value]) => (
+            <div
+              key={key}
+              className={`p-3 rounded-full hover:cursor-pointer ${
+                color === key ? "ring-2 ring-offWhite" : ""
+              }`}
+              style={{ backgroundColor: value }}
+              onClick={() => handleColorSelect(key)}
+            ></div>
+          ))}
+        </div>
+      ) : null}
+
+      {tasks.length === 0 && (
+        <>
+          <div
+            className="w-full border-t border-l border-r h-1 border-lightGray"
+            style={{
+              borderRadius: "20px 20px 0px 0px",
+            }}
+          ></div>
+          <div className="flex flex-col w-full items-center my-10 text-graytext gap-6">
+            <Image
+              src={clipboard}
+              alt="Clipboard Icon"
+              width={60}
+              height={60}
+            />
+            <p className="font-bold">
+              You don't have any tasks registered yet.
+            </p>
+            <p>Create tasks and organize your to-do items.</p>
+          </div>
+        </>
+      )}
+      <div className="absolute left-10 right-10 xl:left-52 xl:right-52 flex gap-2">
+        <DndContext
+          onDragEnd={handleDragEnd}
+          sensors={sensors}
+          onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
+        >
+          <TaskSection id={Priority.HIGH}>
+            {filteredTasks
+              .filter((task) => task.priority === "HIGH")
+              .map((task) => (
+                <Task task={task} key={task.id} />
+              ))}
+          </TaskSection>
+          <TaskSection id={Priority.MEDIUM}>
+            {filteredTasks
+              .filter((task) => task.priority === "MEDIUM")
+              .map((task) => (
+                <Task task={task} key={task.id} />
+              ))}
+          </TaskSection>
+          <TaskSection id={Priority.LOW}>
+            {filteredTasks
+              .filter((task) => task.priority === "LOW")
+              .map((task) => (
+                <Task task={task} key={task.id} />
+              ))}
+          </TaskSection>
+          {/* it was very difficult to get the drop animation working with how react query handles state. It is one thing I would love to go back and figure out given more time */}
+          <DragOverlay>
+            {activeTask ? <Task task={activeTask} /> : null}
+          </DragOverlay>
+        </DndContext>
+      </div>
+    </div>
   );
 };
 
