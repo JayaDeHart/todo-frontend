@@ -9,9 +9,12 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { deleteTask, updateTask } from "../_api/tasks";
 import { colors } from "../create/page";
 import { DragOverlay, useDraggable } from "@dnd-kit/core";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 type TaskProps = {
   task: TaskType;
+  id: number;
 };
 
 const Task = (props: TaskProps) => {
@@ -43,19 +46,18 @@ const Task = (props: TaskProps) => {
     },
   });
 
-  const { attributes, listeners, setNodeRef, transform } = useDraggable({
-    id: task.id.toString(),
-  });
-  const style = transform
-    ? {
-        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-      }
-    : undefined;
+  const { attributes, listeners, setNodeRef, transform, transition } =
+    useSortable({ id: props.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
 
   return (
     <div
       ref={setNodeRef}
-      className="rounded-md"
+      className="rounded-md m-2"
       style={{ borderTop: `1px solid ${color}`, ...style }}
       {...listeners}
       {...attributes}
