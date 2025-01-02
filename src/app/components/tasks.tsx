@@ -7,7 +7,7 @@ import Image from "next/image";
 import clipboard from "../../../public/clipboard.svg";
 import { getTasks } from "../_api/tasks";
 import { colors } from "../create/page";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -24,6 +24,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { updateTask } from "../_api/tasks";
 import { MouseSensor, TouchSensor } from "../util/draggable";
 import { DragOverEvent } from "@dnd-kit/core";
+import { arrayMove, SortableContext } from "@dnd-kit/sortable";
+import { GSP_NO_RETURNED_VALUE } from "next/dist/lib/constants";
 
 const Tasks = () => {
   const {
@@ -61,36 +63,6 @@ const Tasks = () => {
     },
   });
 
-  // const customDropAnimation: DropAnimationFunction = ({
-  //   active,
-  //   dragOverlay,
-  //   draggableNodes,
-  //   droppableContainers,
-  //   measuringConfiguration,
-  //   transform,
-  // }) => {
-  //   console.log(active);
-  //   console.log(draggableNodes);
-  //   console.log(droppableContainers);
-  //   console.log(transform);
-  // };
-
-  // const customDropAnimation: DropAnimationFunction = ({
-  //   transform,
-  //   active,
-  //   dragOverlay,
-  //   draggableNodes,
-  //   droppableContainers,
-  //   measuringConfiguration,
-  // }) => {
-  //   return {
-  //     duration: 500,
-  //     easing: "ease-in",
-  //     keyframes: defaultDropAnimation.keyframes,
-  //     sideEffects: defaultDropAnimation.sideEffects,
-  //   };
-  // };
-
   const [color, setColor] = useState<string | null>(null);
 
   const filteredTasks = color
@@ -100,6 +72,27 @@ const Tasks = () => {
     : tasks;
 
   const completedTasks = filteredTasks.filter((task) => task.completed);
+  const [tasksByPriority, setTasksByPriority] = useState<
+    Record<string, TaskType[]>
+  >({
+    LOW: [],
+    MEDIUM: [],
+    HIGH: [],
+  });
+
+  const [pristine, setPristine] = useState(true);
+
+  useEffect(() => {
+    console.log(pristine);
+    if (tasks && pristine) {
+      setTasksByPriority({
+        LOW: filteredTasks.filter((task) => task.priority === "LOW"),
+        MEDIUM: filteredTasks.filter((task) => task.priority === "MEDIUM"),
+        HIGH: filteredTasks.filter((task) => task.priority === "HIGH"),
+      });
+    }
+    setPristine(true);
+  }, [tasks, color]);
 
   const handleColorSelect = (key: string) => {
     if (key === color) {
@@ -109,38 +102,6 @@ const Tasks = () => {
     }
   };
 
-  const handleDragEnd = (e: DragEndEvent) => {
-    const taskId = e.active.id;
-    const priority = e.over?.id as string;
-    const task = tasks.find((t) => t.id === Number(taskId));
-
-    if (
-      task &&
-      priority &&
-      Object.values(Priority).includes(priority as Priority) &&
-      task.priority !== priority
-    ) {
-      const newTask: TaskType = {
-        ...task,
-        priority: priority as Priority,
-      };
-
-      queryClient.setQueryData<TaskType[]>(["tasks"], (oldData) =>
-        oldData?.map((task) => {
-          if (task.id === newTask.id) {
-            return newTask;
-          } else {
-            return task;
-          }
-        })
-      );
-
-      updateTaskMutation.mutate(newTask);
-    }
-  };
-
-  //what if I just assign it to the right value as it hovers over.
-
   const [activeTask, setActiveTask] = useState<TaskType | null>(null);
 
   function handleDragStart(event: DragStartEvent) {
@@ -149,36 +110,100 @@ const Tasks = () => {
         (t) => t.id === Number(event.active.id.toString())
       );
       if (task) {
+        //filter out the active task from the appropriate section
+        setTasksByPriority((prev) => ({
+          ...prev,
+          [task.priority]: prev[task.priority].filter((t) => t.id !== task.id),
+        }));
+
         setActiveTask(task);
       }
     }
   }
 
-  const handleDragOver = (e: DragOverEvent) => {
-    // const taskId = e.active.id;
-    // const priority = e.over?.id as string;
-    // const task = tasks.find((t) => t.id === Number(taskId));
-    // if (
-    //   task &&
-    //   priority &&
-    //   Object.values(Priority).includes(priority as Priority) &&
-    //   task.priority !== priority
-    // ) {
-    //   const newTask: TaskType = {
-    //     ...task,
-    //     priority: priority as Priority,
-    //   };
-    //   queryClient.setQueryData<TaskType[]>(["tasks"], (oldData) =>
-    //     oldData?.map((task) => {
-    //       if (task.id === newTask.id) {
-    //         return newTask;
-    //       } else {
-    //         return task;
-    //       }
-    //     })
-    //   );
-    //   updateTaskMutation.mutate(newTask);
-    // }
+  const handleDragOver = (e: DragOverEvent) => {};
+
+  const handleDragEnd = (e: DragEndEvent) => {
+    setActiveTask(null);
+    const { active, over } = e;
+
+    if (!active) {
+      return;
+    }
+
+    const oldTask = tasks.find((t) => t.id === Number(active.id));
+
+    if (!oldTask) {
+      return;
+    }
+
+    if (!over) {
+      setTasksByPriority((prev) => {
+        const temp = { ...prev };
+
+        temp[oldTask.priority] = [...temp[oldTask.priority], oldTask];
+        return temp;
+      });
+      return;
+    }
+
+    if (over.id === oldTask.priority) {
+      setTasksByPriority((prev) => {
+        const temp = { ...prev };
+        temp[oldTask.priority] = [...temp[oldTask.priority], oldTask];
+        return temp;
+      });
+      return;
+    }
+
+    //over can either be a droppable container or a draggable element
+    if (typeof over.id === "string") {
+      //typeof string means we are over a droppable container
+      if (oldTask) {
+        const newTask: TaskType = {
+          ...oldTask,
+          priority: over.id as Priority,
+        };
+        updateTaskMutation.mutate(newTask);
+      }
+    }
+    if (typeof over.id === "number") {
+      //typeof number means we are over another draggable element
+      //find that element
+      const overTask = tasks.find((t) => t.id === Number(over.id));
+      if (!overTask) {
+        return;
+      }
+      if (e.collisions) {
+        const containerCollision = e.collisions.find(
+          (c) => typeof c.id === "string"
+        );
+        if (containerCollision) {
+          const newContainer = containerCollision.id;
+          //assign it to the new container, AND move the array position
+
+          setTasksByPriority((prev) => {
+            const temp = { ...prev };
+            if (!e.over) return temp;
+
+            temp[newContainer] = [...temp[newContainer], oldTask];
+
+            const oldIdx = temp[newContainer].indexOf(oldTask);
+            const newIdx = temp[newContainer].indexOf(overTask);
+            temp[newContainer] = arrayMove(temp[newContainer], oldIdx, newIdx);
+            return temp;
+          });
+
+          setPristine(false);
+
+          const newTask: TaskType = {
+            ...oldTask,
+            priority: newContainer as Priority,
+          };
+          updateTaskMutation.mutate(newTask);
+        }
+      }
+    }
   };
 
   const mouseSensor = useSensor(MouseSensor);
@@ -247,30 +272,24 @@ const Tasks = () => {
           onDragStart={handleDragStart}
           onDragOver={handleDragOver}
         >
-          <TaskSection id={Priority.HIGH}>
-            {filteredTasks
-              .filter((task) => task.priority === "HIGH")
-              .map((task) => (
-                <Task task={task} key={task.id} />
-              ))}
+          <TaskSection id={Priority.LOW} items={tasksByPriority.LOW}>
+            {tasksByPriority.LOW.map((task) => (
+              <Task task={task} key={task.id} />
+            ))}
           </TaskSection>
-          <TaskSection id={Priority.MEDIUM}>
-            {filteredTasks
-              .filter((task) => task.priority === "MEDIUM")
-              .map((task) => (
-                <Task task={task} key={task.id} />
-              ))}
+          <TaskSection id={Priority.MEDIUM} items={tasksByPriority.MEDIUM}>
+            {tasksByPriority.MEDIUM.map((task) => (
+              <Task task={task} key={task.id} />
+            ))}
           </TaskSection>
-          <TaskSection id={Priority.LOW}>
-            {filteredTasks
-              .filter((task) => task.priority === "LOW")
-              .map((task) => (
-                <Task task={task} key={task.id} />
-              ))}
+          <TaskSection id={Priority.HIGH} items={tasksByPriority.HIGH}>
+            {tasksByPriority.HIGH.map((task) => (
+              <Task task={task} key={task.id} />
+            ))}
           </TaskSection>
-          {/* it was very difficult to get the drop animation working with how react query handles state. It is one thing I would love to go back and figure out given more time */}
+
           <DragOverlay>
-            {activeTask ? <Task task={activeTask} /> : null}
+            {activeTask ? <Task task={activeTask} hide={false} /> : null}
           </DragOverlay>
         </DndContext>
       </div>
