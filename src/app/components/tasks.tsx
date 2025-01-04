@@ -7,25 +7,24 @@ import Image from "next/image";
 import clipboard from "../../../public/clipboard.svg";
 import { getTasks } from "../_api/tasks";
 import { colors } from "../create/page";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   DndContext,
   DragOverlay,
   DragStartEvent,
   useSensor,
   useSensors,
-  DropAnimation,
-  defaultDropAnimation,
-  DropAnimationFunction,
 } from "@dnd-kit/core";
 import TaskSection from "./ui/taskSection";
 import { DragEndEvent } from "@dnd-kit/core";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { updateTask } from "../_api/tasks";
-import { MouseSensor, TouchSensor } from "../util/draggable";
+import { MouseSensor } from "../util/sensors";
 import { DragOverEvent } from "@dnd-kit/core";
-import { arrayMove, SortableContext } from "@dnd-kit/sortable";
-import { GSP_NO_RETURNED_VALUE } from "next/dist/lib/constants";
+import {
+  appendToContainer,
+  reorderTaskInContainer,
+} from "../util/dragHandlerUtils";
 
 const Tasks = () => {
   const {
@@ -45,8 +44,20 @@ const Tasks = () => {
     return <p>Error loading tasks</p>;
   }
 
-  const queryClient = useQueryClient();
+  //state
+  const [activeTask, setActiveTask] = useState<TaskType | null>(null);
+  const [color, setColor] = useState<string | null>(null);
+  const [pristine, setPristine] = useState(true);
+  const [tasksByPriority, setTasksByPriority] = useState<
+    Record<string, TaskType[]>
+  >({
+    LOW: [],
+    MEDIUM: [],
+    HIGH: [],
+  });
 
+  //react query
+  const queryClient = useQueryClient();
   const updateTaskMutation = useMutation({
     mutationFn: updateTask,
 
@@ -63,27 +74,19 @@ const Tasks = () => {
     },
   });
 
-  const [color, setColor] = useState<string | null>(null);
+  const filteredTasks = useMemo(() => {
+    return color
+      ? tasks.filter(
+          (task) => task.color.toString().toUpperCase() === color.toUpperCase()
+        )
+      : tasks;
+  }, [tasks, color]);
 
-  const filteredTasks = color
-    ? tasks.filter(
-        (task) => task.color.toString().toUpperCase() === color.toUpperCase()
-      )
-    : tasks;
-
-  const completedTasks = filteredTasks.filter((task) => task.completed);
-  const [tasksByPriority, setTasksByPriority] = useState<
-    Record<string, TaskType[]>
-  >({
-    LOW: [],
-    MEDIUM: [],
-    HIGH: [],
-  });
-
-  const [pristine, setPristine] = useState(true);
+  const completedTasks = useMemo(() => {
+    return filteredTasks.filter((task) => task.completed);
+  }, [filteredTasks]);
 
   useEffect(() => {
-    console.log(pristine);
     if (tasks && pristine) {
       setTasksByPriority({
         LOW: filteredTasks.filter((task) => task.priority === "LOW"),
@@ -94,6 +97,8 @@ const Tasks = () => {
     setPristine(true);
   }, [tasks, color]);
 
+  //handlers
+
   const handleColorSelect = (key: string) => {
     if (key === color) {
       setColor(null);
@@ -102,9 +107,7 @@ const Tasks = () => {
     }
   };
 
-  const [activeTask, setActiveTask] = useState<TaskType | null>(null);
-
-  function handleDragStart(event: DragStartEvent) {
+  const handleDragStart = (event: DragStartEvent) => {
     if (tasks) {
       const task = tasks.find(
         (t) => t.id === Number(event.active.id.toString())
@@ -119,7 +122,7 @@ const Tasks = () => {
         setActiveTask(task);
       }
     }
-  }
+  };
 
   const handleDragOver = (e: DragOverEvent) => {};
 
@@ -138,74 +141,66 @@ const Tasks = () => {
     }
 
     if (!over) {
-      setTasksByPriority((prev) => {
-        const temp = { ...prev };
-
-        temp[oldTask.priority] = [...temp[oldTask.priority], oldTask];
-        return temp;
-      });
+      setTasksByPriority((prev) => appendToContainer(prev, oldTask));
       return;
     }
 
     if (over.id === oldTask.priority) {
-      setTasksByPriority((prev) => {
-        const temp = { ...prev };
-        temp[oldTask.priority] = [...temp[oldTask.priority], oldTask];
-        return temp;
-      });
+      setTasksByPriority((prev) => appendToContainer(prev, oldTask));
       return;
     }
 
     //over can either be a droppable container or a draggable element
     if (typeof over.id === "string") {
       //typeof string means we are over a droppable container
-      if (oldTask) {
-        const newTask: TaskType = {
-          ...oldTask,
-          priority: over.id as Priority,
-        };
-        updateTaskMutation.mutate(newTask);
-      }
+
+      const newTask: TaskType = {
+        ...oldTask,
+        priority: over.id as Priority,
+      };
+      setPristine(false);
+      setTasksByPriority((prev) => appendToContainer(prev, newTask));
+      updateTaskMutation.mutate(newTask);
+      setPristine(true);
     }
     if (typeof over.id === "number") {
       //typeof number means we are over another draggable element
-      //find that element
+
       const overTask = tasks.find((t) => t.id === Number(over.id));
-      if (!overTask) {
+
+      if (!overTask || !e.collisions) {
         return;
       }
-      if (e.collisions) {
-        const containerCollision = e.collisions.find(
-          (c) => typeof c.id === "string"
-        );
-        if (containerCollision) {
-          const newContainer = containerCollision.id;
-          //assign it to the new container, AND move the array position
 
-          setTasksByPriority((prev) => {
-            const temp = { ...prev };
-            if (!e.over) return temp;
+      const containerCollision = e.collisions.find(
+        (c) => typeof c.id === "string"
+      );
 
-            temp[newContainer] = [...temp[newContainer], oldTask];
-
-            const oldIdx = temp[newContainer].indexOf(oldTask);
-            const newIdx = temp[newContainer].indexOf(overTask);
-            temp[newContainer] = arrayMove(temp[newContainer], oldIdx, newIdx);
-            return temp;
-          });
-
-          setPristine(false);
-
-          const newTask: TaskType = {
-            ...oldTask,
-            priority: newContainer as Priority,
-          };
-          updateTaskMutation.mutate(newTask);
-        }
+      if (!containerCollision) {
+        return;
       }
+
+      const newContainer = containerCollision.id;
+      //assign it to the new container, AND move the array position
+
+      setTasksByPriority((prev) =>
+        reorderTaskInContainer(prev, oldTask, overTask, String(newContainer))
+      );
+
+      setPristine(false);
+
+      if (String(newContainer) !== oldTask.priority) {
+        const newTask: TaskType = {
+          ...oldTask,
+          priority: newContainer as Priority,
+        };
+        updateTaskMutation.mutate(newTask);
+      }
+      setPristine(true);
     }
   };
 
+  //sensors
   const mouseSensor = useSensor(MouseSensor);
   const sensors = useSensors(mouseSensor);
 
@@ -266,32 +261,34 @@ const Tasks = () => {
         </>
       )}
       <div className="absolute left-10 right-10 xl:left-52 xl:right-52 flex gap-2">
-        <DndContext
-          onDragEnd={handleDragEnd}
-          sensors={sensors}
-          onDragStart={handleDragStart}
-          onDragOver={handleDragOver}
-        >
-          <TaskSection id={Priority.LOW} items={tasksByPriority.LOW}>
-            {tasksByPriority.LOW.map((task) => (
-              <Task task={task} key={task.id} />
-            ))}
-          </TaskSection>
-          <TaskSection id={Priority.MEDIUM} items={tasksByPriority.MEDIUM}>
-            {tasksByPriority.MEDIUM.map((task) => (
-              <Task task={task} key={task.id} />
-            ))}
-          </TaskSection>
-          <TaskSection id={Priority.HIGH} items={tasksByPriority.HIGH}>
-            {tasksByPriority.HIGH.map((task) => (
-              <Task task={task} key={task.id} />
-            ))}
-          </TaskSection>
+        {tasks.length > 0 && (
+          <DndContext
+            onDragEnd={handleDragEnd}
+            sensors={sensors}
+            onDragStart={handleDragStart}
+            onDragOver={handleDragOver}
+          >
+            <TaskSection id={Priority.LOW} items={tasksByPriority.LOW}>
+              {tasksByPriority.LOW.map((task) => (
+                <Task task={task} key={task.id} />
+              ))}
+            </TaskSection>
+            <TaskSection id={Priority.MEDIUM} items={tasksByPriority.MEDIUM}>
+              {tasksByPriority.MEDIUM.map((task) => (
+                <Task task={task} key={task.id} />
+              ))}
+            </TaskSection>
+            <TaskSection id={Priority.HIGH} items={tasksByPriority.HIGH}>
+              {tasksByPriority.HIGH.map((task) => (
+                <Task task={task} key={task.id} />
+              ))}
+            </TaskSection>
 
-          <DragOverlay>
-            {activeTask ? <Task task={activeTask} hide={false} /> : null}
-          </DragOverlay>
-        </DndContext>
+            <DragOverlay>
+              {activeTask ? <Task task={activeTask} /> : null}
+            </DragOverlay>
+          </DndContext>
+        )}
       </div>
     </div>
   );

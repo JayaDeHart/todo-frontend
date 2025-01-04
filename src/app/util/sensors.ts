@@ -4,6 +4,9 @@ import {
 } from "@dnd-kit/core";
 import { MouseEvent, TouchEvent } from "react";
 
+//allows the mouse event to target elements with the 'noDnd' property without dragging them
+//used for the complete and delete buttons on the draggable tasks
+
 const handler = ({ nativeEvent: event }: MouseEvent | TouchEvent) => {
   let cur = event.target as HTMLElement;
 

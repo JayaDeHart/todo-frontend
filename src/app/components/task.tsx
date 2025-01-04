@@ -12,10 +12,9 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 type TaskProps = {
   task: TaskType;
-  hide?: boolean;
 };
 
-const Task = ({ task, hide = false }: TaskProps) => {
+const Task = ({ task }: TaskProps) => {
   const color = colors.get(toSentenceCase(task.color.toString()));
   const queryClient = useQueryClient();
 
@@ -49,7 +48,6 @@ const Task = ({ task, hide = false }: TaskProps) => {
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    display: hide ? "hidden" : undefined,
   };
 
   return (

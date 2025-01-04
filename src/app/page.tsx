@@ -1,10 +1,4 @@
-import Image from "next/image";
-import plus from "../../public/plus.svg";
-import clipboard from "../../public/clipboard.svg";
-import { redirect } from "next/navigation";
 import CreateTaskButton from "./components/createTaskButton";
-import Task from "./components/task";
-import { Color, Priority, TaskType } from "./types";
 import {
   dehydrate,
   HydrationBoundary,
