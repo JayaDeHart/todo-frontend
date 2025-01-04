@@ -2,12 +2,12 @@ import { TaskType } from "../types";
 import { arrayMove } from "@dnd-kit/sortable";
 
 export const reorderTaskInContainer = (
-  tasksByPriority: Record<string, TaskType[]>,
+  prev: Record<string, TaskType[]>,
   oldTask: TaskType,
   overTask: TaskType,
   newContainer: string
 ) => {
-  const temp = { ...tasksByPriority };
+  const temp = { ...prev };
   temp[newContainer] = [...temp[newContainer], oldTask];
 
   const oldIdx = temp[newContainer].indexOf(oldTask);
@@ -23,5 +23,26 @@ export const appendToContainer = (
 ) => {
   const temp = { ...prev };
   temp[newTask.priority] = [...temp[newTask.priority], newTask];
+  return temp;
+};
+
+export const removeFromContainer = (
+  prev: Record<string, TaskType[]>,
+  task: TaskType
+) => {
+  return {
+    ...prev,
+    [task.priority]: prev[task.priority].filter((t) => t.id !== task.id),
+  };
+};
+
+export const replaceWithPlaceholder = (
+  prev: Record<string, TaskType[]>,
+  task: TaskType
+) => {
+  const temp = { ...prev };
+  const index = temp[task.priority].indexOf(task);
+
+  temp[task.priority][index] = { ...task, placeholder: true, id: 9000 };
   return temp;
 };

@@ -6,6 +6,6 @@
 
 3. Rename `.env.sample` to `.env`
 
-4. Ensure that the backend is running on `localhost:3000`
+4. Ensure that the backend is running on `localhost:8000`
 
 5. Run `npm run dev` to start the project

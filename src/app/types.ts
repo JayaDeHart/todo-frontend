@@ -25,6 +25,7 @@ export type TaskType = {
   createdAt: Date;
   updatedAt: Date;
   completedAt?: Date;
+  placeholder?: boolean;
 };
 
 export type SubmitValues = {

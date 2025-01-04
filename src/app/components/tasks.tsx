@@ -23,7 +23,9 @@ import { MouseSensor } from "../util/sensors";
 import { DragOverEvent } from "@dnd-kit/core";
 import {
   appendToContainer,
+  removeFromContainer,
   reorderTaskInContainer,
+  replaceWithPlaceholder,
 } from "../util/dragHandlerUtils";
 
 const Tasks = () => {
@@ -113,18 +115,36 @@ const Tasks = () => {
         (t) => t.id === Number(event.active.id.toString())
       );
       if (task) {
-        //filter out the active task from the appropriate section
-        setTasksByPriority((prev) => ({
-          ...prev,
-          [task.priority]: prev[task.priority].filter((t) => t.id !== task.id),
-        }));
-
+        //replacing the active task with an invisible placeholder that holds its place = nicer visual behavior
+        setTasksByPriority((prev) => replaceWithPlaceholder(prev, task));
         setActiveTask(task);
       }
     }
   };
 
-  const handleDragOver = (e: DragOverEvent) => {};
+  const handleDragOver = (e: DragOverEvent) => {
+    const { active, over } = e;
+    if (!active) {
+      return;
+    }
+    const task = tasks.find((t) => t.id === Number(active.id));
+    if (!task) {
+      return;
+    }
+    const placeholder = tasksByPriority[task.priority].find(
+      (t) => t.placeholder
+    );
+    if (!placeholder) {
+      return;
+    }
+    if (!over) {
+      setTasksByPriority((prev) => removeFromContainer(prev, placeholder));
+      return;
+    }
+    if (String(over.id) !== String(task.priority)) {
+      setTasksByPriority((prev) => removeFromContainer(prev, placeholder));
+    }
+  };
 
   const handleDragEnd = (e: DragEndEvent) => {
     setActiveTask(null);
@@ -270,17 +290,29 @@ const Tasks = () => {
           >
             <TaskSection id={Priority.LOW} items={tasksByPriority.LOW}>
               {tasksByPriority.LOW.map((task) => (
-                <Task task={task} key={task.id} />
+                <Task
+                  task={task}
+                  key={task.id}
+                  placeholder={task.placeholder}
+                />
               ))}
             </TaskSection>
             <TaskSection id={Priority.MEDIUM} items={tasksByPriority.MEDIUM}>
               {tasksByPriority.MEDIUM.map((task) => (
-                <Task task={task} key={task.id} />
+                <Task
+                  task={task}
+                  key={task.id}
+                  placeholder={task.placeholder}
+                />
               ))}
             </TaskSection>
             <TaskSection id={Priority.HIGH} items={tasksByPriority.HIGH}>
               {tasksByPriority.HIGH.map((task) => (
-                <Task task={task} key={task.id} />
+                <Task
+                  task={task}
+                  key={task.id}
+                  placeholder={task.placeholder}
+                />
               ))}
             </TaskSection>
 
