@@ -9,18 +9,7 @@ import { redirect } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createTask } from "../_api/tasks";
-
-export const colors = new Map([
-  ["Red", "#FF3B30"],
-  ["Orange", "#FF9500"],
-  ["Yellow", "#FFCC00"],
-  ["Green", "#34C759"],
-  ["Blue", "#007AFF"],
-  ["Indigo", "#5856D6"],
-  ["Purple", "#AF52DE"],
-  ["Pink", "#FF2D55"],
-  ["Brown", "#A2845E"],
-]);
+import { colors } from "../util/colors";
 
 const CreatePage = () => {
   const queryClient = useQueryClient();

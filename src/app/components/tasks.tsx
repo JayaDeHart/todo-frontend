@@ -6,8 +6,8 @@ import { Priority, TaskType } from "../types";
 import Image from "next/image";
 import clipboard from "../../../public/clipboard.svg";
 import { getTasks } from "../_api/tasks";
-import { colors } from "../create/page";
 import { useState, useEffect, useMemo } from "react";
+import { colors } from "../util/colors";
 import {
   DndContext,
   DragOverlay,
