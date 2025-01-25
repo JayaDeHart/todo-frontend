@@ -7,7 +7,7 @@ import trash from "../../../public/trash.svg";
 import Image from "next/image";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { deleteTask, updateTask } from "../_api/tasks";
-import { colors } from "../create/page";
+import { colors } from "../util/colors";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 type TaskProps = {

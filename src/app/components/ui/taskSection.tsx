@@ -1,4 +1,3 @@
-import { colors } from "@/app/create/page";
 import { Priority, TaskType, toSentenceCase } from "@/app/types";
 import { useDroppable } from "@dnd-kit/core";
 import {
