@@ -115,7 +115,9 @@ const Task = ({ task, placeholder = false }: TaskProps) => {
             })
           }
         />
-        <div className="flex-1">{task.title}</div>
+        <div className="flex items-center justify-center flex-1">
+          {task.title}
+        </div>
         <div className="border border-lightGray bg-medGray flex-shrink-0 ml-auto p-2 px-4 rounded-md">
           {toSentenceCase(task.priority.toString())}
         </div>
