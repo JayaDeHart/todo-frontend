@@ -160,6 +160,14 @@ const Tasks = () => {
       return;
     }
 
+    const placeholder = tasksByPriority[oldTask.priority].find(
+      (t) => t.placeholder
+    );
+
+    if (placeholder) {
+      setTasksByPriority((prev) => removeFromContainer(prev, placeholder));
+    }
+
     if (!over) {
       setTasksByPriority((prev) => appendToContainer(prev, oldTask));
       return;
